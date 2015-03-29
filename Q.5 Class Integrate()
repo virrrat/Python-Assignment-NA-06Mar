@@ -35,10 +35,25 @@
 			sol=SimpsonsRule(a,b,n,fn)
 			return sol
 
+        def plot(self,a,b,n,fn):
+		import matplotlib.pyplot as plt
+		from numpy import arange
+		x=[i for i in arange(a,b,(b-a)/(n*1000.0))]
+		x=x+[b] 
+		y=[i for i in arange(a,b,(b-a)/(n*1.0))]
+		y=y+[b]
+		z=[fn(i) for i in x]
+		plt.plot(x,z)
+		for i in range(n+1):
+			plt.plot([y[i],y[i]],[0,fn(y[i])])
+		for i in range(n):
+			plt.plot([y[i],y[i+1]],[fn(y[i]),fn(y[i+1])])
+		plt.show()	
 
 
 
-#Example:
+
+#Initial Example:
 >>> f=lambda x:x*x			
 >>> igr=Integrate()
 >>> for method in ['trapezoid','simpson']:
@@ -48,3 +63,11 @@
 	
 71.66875
 71.66666666666666
+
+#New Example:
+>>> f=lambda: x:x*x*x
+>>> igr=Integrate()
+>>> a,b,n=2,7,15
+>>> igr.plot(a,b,n,f)
+##After pressing Enter the plot comes over the screen##
+#Different trapezoid regions can be clearly distinguished
