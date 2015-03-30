@@ -1,219 +1,144 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+def frange(a,b):
+    temp=a
+    while(temp<b):
+        yield(temp)
+        temp+=0.01
+        
+class LPsolver:
 
-a=np.array([3,2])
-b=np.array([18,42,24])
-c=np.array([(2,1),(2,3),(3,1)])
-a1=np.array([1,3])
-b1=np.array([10,5,4])
-c1=np.array([(1,2),(1,0),(0,1)])
-
-class LPSsolver():
+    def __init__(self):                                                     # Initialising instance variables
+        self.objective=None
+        self.constraints=None
+        self.table=None
+        self.result=None
     
-    def solve(self,a,b,c):
-        
-        l_a=len(a)   # This is for no. of variables
-        l_b=len(b)   # This is for no. of equations
-        x=[0 for i in range(l_a)]        #list where final answer has to store
-        graph=[]
-        b=b[:,np.newaxis]
-        arr=np.identity(l_b)
-        arr=np.concatenate((c,arr,b),axis=1)
-        C=np.concatenate([a,np.array([0 for i in range(l_b)])])
-        B=np.array([0 for i in range(l_b)])
-        b_x=list(range(l_a,l_a+l_b))
-        minpos=[0 for i in range(l_b)]
-        maxpos=[0 for i in range(l_a+l_b)]
-        z=np.array([[0.0 for i in range(l_a+l_b+1)]])
-        
-        for i in range(l_a+l_b+1):
-            if i<l_a: z[0][i]=-a[i]
-        
-        arr=np.concatenate((arr,z),axis=0)
-        z1,k=0,0
-        ann1=[]
-        
-        while 1:
-            i,j=0,0
-            for i in range(l_a+l_b):
-                maxpos[i]=C[i]-sum(arr[:-1,i]*B)
-        
-            maxmaxpos=max(maxpos)
-           
+    def solve(self,L,M,option):
+        return (self.Simplex(L,M))
+
+    def Simplex(self,L,M):                                                  # Simplex function takes two lists as arguments
             
-            if maxmaxpos<=0: break
-            imax=maxpos.index(maxmaxpos)
-            for i in range(l_b):
-                if arr[i,imax]==0:
-                    minpos[i]=1e40
-                else:
-                    minpos[i]=arr[i,-1]/arr[i,imax]
-                    
-                    
-            
-            qminpos=filter(lambda x:x>0,minpos)
-            if qminpos==[]: break
-            minminpos=min(qminpos)
-            imin=minpos.index(minminpos)
-            B[imin]=C[imax]
-            b_x[imin]=imax
-            arr[imin]=arr[imin]/arr[imin,imax]
-            
-            for i in range(0,imin)+range(imin+1,l_b+1):
-                arr[i]=arr[i]-arr[i,imax]*arr[imin]/arr[imin,imax]
-            
-            graph.append([0]*l_a)
-            for i in range(l_a):
-                if i in b_x:
-                    graph[k][j]=arr[b_x.index(i),-1]
-                else:
-                    graph[k][j]=0
-                j+=1
-            k+=1
-                    
-            
-            ann1.append(arr[-1,-1])        
-            if z1<arr[-1,-1]:
-                z1=arr[-1,-1]
-            else: break
-            
-            
-         
-          
-        for i in range(l_b):
-            if b_x[i]<la:
-                x[b_x[i]]=arr[i,-1]
-        x.append(sum([x[i]*a[i] for i in range(l_a)]))
+        # List L contains co-efficients of variables in the objective
+        # e.g.- If objective is (2x+5y+7z) then L=[2,5,7]
+        # List M contains co-efficients of variables in the constraints and the last element is the constant
+        # List M is a nested list
+        # e.g. - If the constraints are x<=200 , y<=10 , z<=200 and x+2y+3z<=700 then --  
+        # M=[[1,0,0,200],[0,1,0,10],[0,0,1,200],[1,2,3,700]], i.e.,
+        # 1.x+0.y+0.z<=200 , 0.x+1.y+0.z<=10 , 0.x+0.y+1.z<=200 and 1.x+2.y+3.z<=700
         
-        
-        graph1=np.array(graph)
-        
-        extral=[]
-        if 0 in graph1[:,1]:
-            for i in range(l_b):
-                if c[i,0]!=0:
-                    extral.append(b[i,0]/c[i,1])
-            extra=min(extral)
-            graph.append([0,extra])
-            ann1.append(a[1]*extra)
-        elif 0 in graph1[:,0]:
-            for i in range(l_b):
-                if c[i,0]!=0:
-                    extral.append(b[i,0]/c[i,0])
-            extra=min(extral)
-            graph.append([extra,0])
-            ann1.append(a[0]*extra)
-                
-        graph=np.array(graph)
-        
-        xmax=max(graph[:,0])
-        ymax=max(graph[:,1])
-        
-        #Defining Subplots
-        fig=plt.figure()
-        fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.1, hspace=0.1)
-        constraints=fig.add_subplot(221)
-        sol=fig.add_subplot(223)
-        final=fig.add_subplot(122)
-        
-        #Defining line names
-        linename=[0]*3
-        for i in range(3):
-            tempx=str(c[i,0])
-            tempy=str(c[i,1])
-            if tempx=='1': tempx=''
-            if tempy=='1': tempy=''
-            if tempx=='0':
-                linename[i]="%sy-%d=0"%(tempy,b[i])
-            elif tempy=='0':
-                linename[i]="%sx-%d=0"%(tempx,b[i])
+        from numpy import array
+        self.objective=array(L,float)
+        self.constraints=array(M,float)
+        no_of_variables=len(self.objective)                                 # variable to store total number of variables
+        no_of_equations=len(self.constraints)                               # variable to store total number of equations(constraints)
+        self.table=array([[0 for i in range(no_of_variables+no_of_equations+2)] for j in range(no_of_equations+1)],float)   # initialising the augmented matrix
+        for i in range(no_of_equations):
+            for j in range(no_of_variables):
+                self.table[i][j]=self.constraints[i][j]                     # filling up the matrix
+        for i in range(no_of_variables):
+            self.table[-1][i]=(-1)*self.objective[i]                        # filling up the matrix
+        for i in range(no_of_equations+1):
+            self.table[i][no_of_variables+i]=1                              # filling up the matrix
+        for i in range(no_of_equations):
+            self.table[i][-1]=self.constraints[i][-1]                       # filling up the matrix
+        self.table[-1][-1]=0                                                # matrix ready
+        for i in range(no_of_equations+1):
+            self.table[i][no_of_variables+i]=self.table[i][-1]/self.table[i][no_of_variables+i]
+        flag=0
+        if(min(self.table[-1])>=0):                                         # testing terminal condition
+            flag=1
+        while(flag==0):                                                     # loop
+            pivot_col=self.table[-1].tolist().index(min(self.table[-1]))    # finding column of pivot
+            pivot_row,temp,flag2=-1,0,0                                         
+            for i in range(no_of_equations):                                                        
+                if(self.table[i][pivot_col]>0 and (pivot_row==-1 or self.table[i][-1]/self.table[i][pivot_col]<temp)):   # finding row of pivot
+                    pivot_row=i
+                    temp=self.table[i][-1]/self.table[i][pivot_col]
+                    flag2=1
+            if(flag2==0):
+                return ("Unbound")                                          # terminal condition 
+            pivot=self.table[pivot_row][pivot_col]
+            for i in range(no_of_equations+1):                              # loop to set all other elements of pivot's column to 0 by row operations
+                if(i==pivot_row):
+                    continue
+                scale=self.table[i][pivot_col]/pivot
+                self.table[i]=self.table[i]-(scale*self.table[pivot_row])
+            if(min(self.table[-1])>=0):
+                flag=1                                                      # terminal condition
+            x_pos,y_pos,count_1,count_2=0,0,0,0                             # variables to store boundary points
+            for i in range(no_of_equations+1):
+                if(self.table[i][0]!=0):
+                    count_1+=1
+                    x_pos=self.table[i][-1]/self.table[i][0]
+                if(self.table[i][1]!=0):
+                    count_2+=1
+                    y_pos=self.table[i][-1]/self.table[i][1]
+            if(count_1>1):
+                x_pos=0
+            if(count_2>1):
+                y_pos=0
+            plt.plot(x_pos,y_pos,"o",color="c")                             # plotting boundary points
+        self.result=""                                                      # string to store final answer
+        for i in range(no_of_variables):                                    # building up the string
+            count,temp,flag=0,0,1
+            for j in range(no_of_equations+1):
+                if(self.table[j][i]!=0):
+                    count+=1
+                    if(count>1):
+                        flag=0
+                        break
+                    temp=self.table[j][-1]/self.table[j][i]
+            if(flag==1):
+                self.result+="x_"+str(i+1)+" = "+str(temp)+" ; "
             else:
-                linename[i]="%sy+%sx-%d=0"%(tempy,tempx,b[i])
-        
-        
-        
-        
-        #Plotting constraints
-        t=np.arange(0,xmax+5,0.1)
-        ycon=[]
-        xcon=[]
-        yconmax=[]
-        linecon=[0]*3
-        for i in range(3):
-            if c[i][1]==0:
-                ycon.append(np.arange(0,int(ymax)+10,0.1))
-                xcon.append([float(b[i]/c[i][0]) for j in ycon[i]])
-            elif c[i][0]==0:
-                xcon.append(t)
-                ycon.append([float(b[i]/c[i][1]) for j in t])
+                self.result+="x_"+str(i+1)+"=0 ; "
+        self.result+="Maximum value of objective = "+str(self.table[-1][-1])
+        self.plot()
+        return (self.result)                                                # return result
+
+    def plot(self):
+        Color=["b","g","r","y","m"]                                         # list of colors to be used
+        j=0                                                                 # counter variable
+        plt.xlabel("x axis")                                            
+        plt.ylabel("y axis")                                            
+        Legend=[]                                                           # initialising legend
+        x_max,y_max=0,0
+        for i in self.constraints:                                          
+            if(i[0]!=0):
+                temp=i[2]/i[0]
+                if(temp>x_max):
+                    x_max=temp
+            if(i[1]!=0):
+                temp=i[2]/i[1]
+                if(temp>y_max):
+                    y_max=temp
+        for i in self.constraints:                                          # plotting constraint lines
+            if(i[0]!=0 and i[1]!=0):
+                plt.plot([0,i[2]/i[0]],[i[2]/i[1],0],color=Color[j%5])
+                x=list(frange(0,i[2]/i[0]))
+                y1=list(map(lambda X:(i[2]-i[0]*X)/i[1],x))
+                y2=list(map(lambda X:0,x))
+                plt.fill_between(x,y1,y2,color=Color[j%5],alpha=0.7)        # filling color
+            elif(i[0]!=0):
+                plt.axvline(i[2],color=Color[j%5])
+                x=list(frange(0,i[2]/i[0]))
+                y1=list(map(lambda X:y_max,x))
+                y2=list(map(lambda X:0,x))
+                plt.fill_between(x,y1,y2,color=Color[j%5],alpha=0.7)        # filling color
             else:
-                xcon.append(t)
-                ycon.append((b[i]-c[i][0]*t)/c[i][1])
-                yconmax.append(max(ycon[i]))
-        yconmax=max(yconmax)
-        
-        st=['red','blue','green']
-        for i in range(3):
-            print(xcon[i])
-            print(ycon[i])
-            linecon[i],=constraints.plot(xcon[i],ycon[i])
-            constraints.fill_between(xcon[i],ycon[i],facecolor=st[i], alpha=0.5)
-        constraints.axis([0,xmax+4,0,yconmax])
-        constraints.annotate('Constraint Equations',xy=(xmax-3.7,yconmax-2), xytext=(xmax-3.7,yconmax-3))
-        constraints.legend()
+                plt.axhline(i[2],color=Color[j%5])
+                x=list(frange(0,x_max))
+                y1=list(map(lambda X:i[2]/i[1],x))
+                y2=list(map(lambda X:0,x))
+                plt.fill_between(x,y1,y2,color=Color[j%5],alpha=0.7)        # filling color
+            Legend.append(mpatches.Patch(color=Color[j%5],label="Constraint "+str(j+1)))    # updating legend
+            j+=1
+        Legend.append(mpatches.Patch(color="w",label="The innermost region is the feasible region"))
+        Legend.append(mpatches.Patch(color="w",label="and its boundary points are the critical points"))
+        plt.legend(handles=Legend)                                          # putting legend on graph
+        plt.show()                                                          # displaying graph
 
-            
-        #Plotting sol
-        sol.plot(graph[:,0],graph[:,1],'ro',markersize=8,label="Z Achieved At Each Iteration")
-        sol.plot(graph[:,0],graph[:,1],'k-',marker='o',markerfacecolor='black', markersize=8)
-        sol.plot(graph[-2,0],graph[-2,1],'ro',markersize=10)
-        sol.fill_between(graph[:,0],graph[:,1],)
-        sol.axis([0,xmax+2.5,0,ymax+3])
-        sol.annotate('Z at each iteration',xy=(xmax-3.8,ymax+1), xytext=(xmax-3.7,ymax+1))
-        for i in range(0,len(graph)):
-            ann="Z = %d"%(ann1[i])
-            
-            sol.annotate(ann, xy=(graph[i,0], graph[i,1]), xytext=(graph[i,0]+.2, graph[i,1]+.3))
-        
-        #Defining Final
-        znormal,=final.plot(graph[:,0],graph[:,1],'ko',markersize=8,)
-        final.plot(graph[:,0],graph[:,1],'k-',marker='o',markerfacecolor='black', markersize=8)
-        zmax,=final.plot(graph[-2,0],graph[-2,1],'ro',markersize=10)
-        final.fill_between(graph[:,0],graph[:,1],)
-        final.axis([0,xmax+1,0,yconmax+3])
-        
-        for i in range(3):
-            final.plot(xcon[i],ycon[i])
-            final.fill_between(xcon[i],ycon[i],facecolor=st[i], alpha=0.2)
-        
-    
-        
-        #Defining legends
-        fig.legend(linecon+[znormal,zmax],linename+['Z at each Iteration','Maximum Z'],numpoints=1,loc='upper center',prop={'size':12},fancybox=True,shadow=True,ncol=5,title='SIMPLEX METHOD').get_frame().set_alpha(0.5)
-        
-        plt.axis([0,xmax+5,0,ymax+5])
-
-        
-            
-        
-        
-        
-        
-        ann="Maximum Z = %d"%(x[-1])
-        plt.annotate(ann, xy=(graph[-2,0]+.1, graph[-2,1]+.1), xytext=(graph[-2,0]+2, graph[-2,1]+2),arrowprops=dict(facecolor='black', shrink=0.05),)
-        for i in range(0,len(graph)-2)+range(len(graph)-1,len(graph)):
-            ann="Z = %d"%(ann1[i])
-            
-            plt.annotate(ann, xy=(graph[i,0], graph[i,1]), xytext=(graph[i,0]+.2, graph[i,1]+.3))
-        
-        plt.show()
-        x=map(int,x)
-        return x
-    
-lps=LPSsolver()
-solution=lps.solve(a,b,c)
+lps=LPsolver()                                                              # object creation
+solution=lps.solve([3,2],[[2,1,18],[2,3,42],[3,1,24]],option="Simplex")     # calling Simplex method
 print(solution)
-            
-            
-                
-        
