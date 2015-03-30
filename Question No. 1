@@ -12,22 +12,22 @@ class LPSsolver():
     
     def solve(self,a,b,c):
         
-        la=len(a)   #no. of variables
-        lb=len(b)   #no. of equations
-        x=[0 for i in range(la)]        #final answer
+        l_a=len(a)   # This is for no. of variables
+        l_b=len(b)   # This is for no. of equations
+        x=[0 for i in range(l_a)]        #list where final answer has to store
         graph=[]
         b=b[:,np.newaxis]
-        arr=np.identity(lb)
+        arr=np.identity(l_b)
         arr=np.concatenate((c,arr,b),axis=1)
-        C=np.concatenate([a,np.array([0 for i in range(lb)])])
-        B=np.array([0 for i in range(lb)])
-        bx=list(range(la,la+lb))
-        minpos=[0 for i in range(lb)]
-        maxpos=[0 for i in range(la+lb)]
-        z=np.array([[0.0 for i in range(la+lb+1)]])
+        C=np.concatenate([a,np.array([0 for i in range(l_b)])])
+        B=np.array([0 for i in range(l_b)])
+        b_x=list(range(l_a,l_a+l_b))
+        minpos=[0 for i in range(l_b)]
+        maxpos=[0 for i in range(l_a+l_b)]
+        z=np.array([[0.0 for i in range(l_a+l_b+1)]])
         
-        for i in range(la+lb+1):
-            if i<la: z[0][i]=-a[i]
+        for i in range(l_a+l_b+1):
+            if i<l_a: z[0][i]=-a[i]
         
         arr=np.concatenate((arr,z),axis=0)
         z1,k=0,0
@@ -35,7 +35,7 @@ class LPSsolver():
         
         while 1:
             i,j=0,0
-            for i in range(la+lb):
+            for i in range(l_a+l_b):
                 maxpos[i]=C[i]-sum(arr[:-1,i]*B)
         
             maxmaxpos=max(maxpos)
@@ -43,7 +43,7 @@ class LPSsolver():
             
             if maxmaxpos<=0: break
             imax=maxpos.index(maxmaxpos)
-            for i in range(lb):
+            for i in range(l_b):
                 if arr[i,imax]==0:
                     minpos[i]=1e40
                 else:
@@ -56,16 +56,16 @@ class LPSsolver():
             minminpos=min(qminpos)
             imin=minpos.index(minminpos)
             B[imin]=C[imax]
-            bx[imin]=imax
+            b_x[imin]=imax
             arr[imin]=arr[imin]/arr[imin,imax]
             
-            for i in range(0,imin)+range(imin+1,lb+1):
+            for i in range(0,imin)+range(imin+1,l_b+1):
                 arr[i]=arr[i]-arr[i,imax]*arr[imin]/arr[imin,imax]
             
-            graph.append([0]*la)
-            for i in range(la):
-                if i in bx:
-                    graph[k][j]=arr[bx.index(i),-1]
+            graph.append([0]*l_a)
+            for i in range(l_a):
+                if i in b_x:
+                    graph[k][j]=arr[b_x.index(i),-1]
                 else:
                     graph[k][j]=0
                 j+=1
@@ -80,24 +80,24 @@ class LPSsolver():
             
          
           
-        for i in range(lb):
-            if bx[i]<la:
-                x[bx[i]]=arr[i,-1]
-        x.append(sum([x[i]*a[i] for i in range(la)]))
+        for i in range(l_b):
+            if b_x[i]<la:
+                x[b_x[i]]=arr[i,-1]
+        x.append(sum([x[i]*a[i] for i in range(l_a)]))
         
         
         graph1=np.array(graph)
         
         extral=[]
         if 0 in graph1[:,1]:
-            for i in range(lb):
+            for i in range(l_b):
                 if c[i,0]!=0:
                     extral.append(b[i,0]/c[i,1])
             extra=min(extral)
             graph.append([0,extra])
             ann1.append(a[1]*extra)
         elif 0 in graph1[:,0]:
-            for i in range(lb):
+            for i in range(l_b):
                 if c[i,0]!=0:
                     extral.append(b[i,0]/c[i,0])
             extra=min(extral)
